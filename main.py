@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
+
 # Function to read the csv file
 def read_csv_file(file_name):
     rows = []
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     select_button.pack(pady=5, padx=60)
 
     dropdown = ttk.Combobox(main_frame, values=get_available_accounts())
-    dropdown.grid(row=0, column=0,columnspan=2, padx=10, pady=5, sticky=tk.W)
+    dropdown.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
     dropdown.current(0)
 
     # Add button to show plot in the main frame (left side)
