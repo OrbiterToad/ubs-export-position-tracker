@@ -51,14 +51,14 @@ def write_data_to_csv(iban, name, amount, currency):
         for line in data:
             if line.startswith(date):
                 print(f"Data for {date} already exists in {file_name}")
-                return
+                continue
 
     # Append new data to the file
     with open(file_path, 'a') as file:
         file.write(f"{date},{amount},{currency}\n")
         print(f"Data written to {file_name}")
 
-    # Assuming refresh_accounts is defined elsewhere
+    # Refresh accounts after writing data
     refresh_accounts()
 
 
@@ -114,6 +114,7 @@ def refresh_accounts():
     accounts = get_available_accounts()
     dropdown['values'] = accounts
     dropdown.current(0)
+    update_current_label()
 
 
 def select_file():
@@ -126,11 +127,54 @@ def select_file():
             write_data_to_csv(account_infos[0], account_infos[13], account_infos[27], account_infos[4])
 
 
+def update_current_label(*args):
+    try:
+        current_value = dropdown.get()
+        account_name_label.config(text=f"{current_value.split('_')[0]}", background='white', foreground='black')
+        file_path = f'data/{current_value}'
+        data = pd.read_csv(file_path)
+
+        if 'Amount' not in data.columns:
+            raise KeyError("'Amount' column not found in the data")
+
+        if len(data) < 2:
+            raise IndexError("Not enough data to calculate change")
+
+        account_value = data['Amount'].iloc[-1]
+        current_value_label.config(text=f"Value: {account_value}", background='white', foreground='black')
+
+        account_change = data['Amount'].iloc[-1] - data['Amount'].iloc[-2]
+        # bool is positive or negative for coloring red or green if 0 or undefined it will be black
+        change_color = 'black'
+        if account_change > 0:
+            change_color = 'green'
+        elif account_change < 0:
+            change_color = 'red'
+
+        current_change_label.config(text=f"Change: {account_change}", background='white', foreground=change_color)
+
+    except FileNotFoundError:
+        current_value_label.config(text="Error: File not found", background='red', foreground='black')
+        current_change_label.config(text="Error: File not found", background='red', foreground='black')
+    except pd.errors.EmptyDataError:
+        current_value_label.config(text="Error: No data in file", background='red', foreground='black')
+        current_change_label.config(text="Error: No data in file", background='red', foreground='black')
+    except KeyError as e:
+        current_value_label.config(text=f"Error: {e}", background='red', foreground='black')
+        current_change_label.config(text=f"Error: {e}", background='red', foreground='black')
+    except IndexError as e:
+        current_value_label.config(text=f"Error: {e}", background='red', foreground='black')
+        current_change_label.config(text=f"Error: {e}", background='red', foreground='black')
+    except Exception as e:
+        current_value_label.config(text=f"Error: {str(e)}", background='red', foreground='black')
+        current_change_label.config(text=f"Error: {str(e)}", background='red', foreground='black')
+
+
 # Main function to run the Tkinter application
 if __name__ == '__main__':
     root = TkinterDnD.Tk()
     root.title('CSV File Processor')
-    root.geometry('400x300')
+    root.geometry('600x250')
 
     # Create a main frame to hold everything
     main_frame = ttk.Frame(root, padding=(10, 10))
@@ -156,12 +200,19 @@ if __name__ == '__main__':
     dropdown = ttk.Combobox(main_frame, values=get_available_accounts())
     dropdown.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
     dropdown.current(0)
+    dropdown.bind("<<ComboboxSelected>>", update_current_label)
 
-    # changePanel = ttk.Label(main_frame, anchor="center", padding=(10, 10), background="white")
-    # changePanel.grid(row=1, column=0, columnspan=2, sticky=tk.NSEW)
-    #
-    # changeCurrent = ttk.Label(changePanel, text="Current Account: ", anchor="center", padding=(10, 10), background="white")
-    # changeCurrent.pack(side="left")
+    changePanel = ttk.Label(main_frame, anchor="center", padding=(10, 10), background="white")
+    changePanel.grid(row=1, column=0, columnspan=2, sticky=tk.NSEW)
+
+    account_name_label = ttk.Label(changePanel, text="Account: ")
+    account_name_label.grid(row=0, column=0, padx=10, pady=5, sticky=tk.W)
+
+    current_value_label = ttk.Label(changePanel, text="Value: ")
+    current_value_label.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+
+    current_change_label = ttk.Label(changePanel, text="Change: ")
+    current_change_label.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
     plot_button = ttk.Button(main_frame, text="Show Plot", command=lambda: show_plot(dropdown.get()))
     plot_button.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
@@ -175,4 +226,5 @@ if __name__ == '__main__':
     root.dnd_bind('<<Drop>>', on_drop)
 
     # Run the Tkinter event loop
+    refresh_accounts()
     root.mainloop()
