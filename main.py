@@ -27,36 +27,39 @@ def read_csv_file(file_name):
 def write_data_to_csv(iban, name, amount, currency):
     # File name is IBAN + Name + .csv
     file_name = f"{name}_{iban}.csv"
-    file_path = f'data/{file_name}'
+    file_path = os.path.join('data', file_name)
+
+    # Ensure the directory exists
+    os.makedirs('data', exist_ok=True)
 
     # Ensure the file exists with headers if it does not already exist
-    try:
-        with open(file_path, 'r') as file:
-            pass
-    except FileNotFoundError:
+    if not os.path.exists(file_path):
         with open(file_path, 'w') as file:
             file.write('Date,Amount,Currency\n')
 
     # Get current date
     date = datetime.today().strftime('%Y-%m-%d')
 
+    # Handle amount formatting
     if not amount:
         amount = '0'
     amount = amount.replace('\'', '').replace(',', '.')
 
-    # Write data to file if the file does not already contain the data from the same day
-    with open(file_path, 'a') as file:
-        # Check if the data is already in the file
-        with open(file_path, 'r') as file:
-            data = file.readlines()
-            for line in data:
-                if line.startswith(date):
-                    print(f"Data for {date} already exists in {file_name}")
-                    return
+    # Check if the data for the current date already exists
+    with open(file_path, 'r') as file:
+        data = file.readlines()
+        for line in data:
+            if line.startswith(date):
+                print(f"Data for {date} already exists in {file_name}")
+                return
 
+    # Append new data to the file
+    with open(file_path, 'a') as file:
         file.write(f"{date},{amount},{currency}\n")
         print(f"Data written to {file_name}")
-        refresh_accounts()
+
+    # Assuming refresh_accounts is defined elsewhere
+    refresh_accounts()
 
 
 # Function to handle file drop event
@@ -70,15 +73,28 @@ def on_drop(event):
 
 
 def show_plot(selected_file):
-    # read the file in the data folder
+    # Read the file in the data folder
     file_path = f'data/{selected_file}'
     data = pd.read_csv(file_path)
 
-    # plot the data into a line graph
+    # Convert the 'Date' column to datetime format
+    data['Date'] = pd.to_datetime(data['Date'])
+
+    # Sort the data by date in case it's not sorted
+    data.sort_values('Date', inplace=True)
+
+    # Plot the data into a line graph
+    plt.figure(figsize=(10, 5))  # Optional: Adjust the figure size for better readability
     plt.plot(data['Date'], data['Amount'])
     plt.xlabel('Date')
     plt.ylabel('Amount')
-    plt.title(f'Amount vs Date for {selected_file}')
+    plt.title(f'Financial Data for {selected_file}')
+
+    # Optional: Format the date on the x-axis for better readability
+    plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.AutoDateLocator())
+    plt.gcf().autofmt_xdate()  # Rotate date labels for better readability
+
     plt.show()
 
 
@@ -141,13 +157,18 @@ if __name__ == '__main__':
     dropdown.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
     dropdown.current(0)
 
-    # Add button to show plot in the main frame (left side)
+    # changePanel = ttk.Label(main_frame, anchor="center", padding=(10, 10), background="white")
+    # changePanel.grid(row=1, column=0, columnspan=2, sticky=tk.NSEW)
+    #
+    # changeCurrent = ttk.Label(changePanel, text="Current Account: ", anchor="center", padding=(10, 10), background="white")
+    # changeCurrent.pack(side="left")
+
     plot_button = ttk.Button(main_frame, text="Show Plot", command=lambda: show_plot(dropdown.get()))
-    plot_button.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+    plot_button.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
     # Add refresh button in the main frame (left side)
     refresh_button = ttk.Button(main_frame, text="Refresh", command=lambda: refresh_accounts())
-    refresh_button.grid(row=1, column=1, padx=10, pady=5, sticky=tk.W)
+    refresh_button.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
 
     # Set up drag-and-drop functionality
     root.drop_target_register(DND_FILES)
