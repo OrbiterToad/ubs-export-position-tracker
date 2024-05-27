@@ -151,6 +151,37 @@ def update_current_label(*args):
         current_value_label.config(text=f"Error: {str(e)}", background='red', foreground='black')
         current_change_label.config(text=f"Error: {str(e)}", background='red', foreground='black')
 
+def show_daily_report():
+    report_window = tk.Toplevel()
+    report_window.title('Daily Report')
+    report_window.geometry('150x110')
+
+#     report shows daily change and the total amount of money in all accounts of the day
+    daily_change = 0
+    total_amount = 0
+
+    for file in os.listdir('data'):
+        if file.endswith('.csv'):
+            file_path = f'data/{file}'
+            data = pd.read_csv(file_path)
+
+            if len(data) < 2:
+                continue
+
+            daily_change += data['Amount'].iloc[-1] - data['Amount'].iloc[-2]
+            total_amount += data['Amount'].iloc[-1]
+
+    daily_change_label = ttk.Label(report_window, text=f"Daily Change: {daily_change}")
+    daily_change_label.pack(pady=5)
+
+    total_amount_label = ttk.Label(report_window, text=f"Total Amount: {total_amount}")
+    total_amount_label.pack(pady=5)
+
+    close_button = ttk.Button(report_window, text="Close", command=report_window.destroy)
+    close_button.pack(pady=5)
+
+    report_window.mainloop()
+
 
 if __name__ == '__main__':
     root = TkinterDnD.Tk()
@@ -196,6 +227,9 @@ if __name__ == '__main__':
 
     refresh_button = ttk.Button(main_frame, text="Refresh", command=lambda: refresh_accounts())
     refresh_button.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
+
+    daily_report_button = ttk.Button(main_frame, text="Daily Report", command=lambda: show_daily_report())
+    daily_report_button.grid(row=2, column=2, padx=10, pady=5, sticky=tk.W)
 
     root.drop_target_register(DND_FILES)
     root.dnd_bind('<<Drop>>', on_drop)
