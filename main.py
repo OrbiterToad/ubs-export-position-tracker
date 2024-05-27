@@ -9,7 +9,6 @@ import pandas as pd
 import os
 
 
-# Function to read the csv file
 def read_csv_file(file_name):
     rows = []
     with open(file_name, 'r') as file:
@@ -23,29 +22,22 @@ def read_csv_file(file_name):
     return rows
 
 
-# Function to write data to a CSV file
 def write_data_to_csv(iban, name, amount, currency):
-    # File name is IBAN + Name + .csv
     file_name = f"{name}_{iban}.csv"
     file_path = os.path.join('data', file_name)
 
-    # Ensure the directory exists
     os.makedirs('data', exist_ok=True)
 
-    # Ensure the file exists with headers if it does not already exist
     if not os.path.exists(file_path):
         with open(file_path, 'w') as file:
             file.write('Date,Amount,Currency\n')
 
-    # Get current date
     date = datetime.today().strftime('%Y-%m-%d')
 
-    # Handle amount formatting
     if not amount:
         amount = '0'
     amount = amount.replace('\'', '').replace(',', '.')
 
-    # Check if the data for the current date already exists
     with open(file_path, 'r') as file:
         data = file.readlines()
         for line in data:
@@ -53,16 +45,13 @@ def write_data_to_csv(iban, name, amount, currency):
                 print(f"Data for {date} already exists in {file_name}")
                 continue
 
-    # Append new data to the file
     with open(file_path, 'a') as file:
         file.write(f"{date},{amount},{currency}\n")
         print(f"Data written to {file_name}")
 
-    # Refresh accounts after writing data
     refresh_accounts()
 
 
-# Function to handle file drop event
 def on_drop(event):
     file_path = event.data.strip('{}')
     info = read_csv_file(file_path)
@@ -73,24 +62,19 @@ def on_drop(event):
 
 
 def show_plot(selected_file):
-    # Read the file in the data folder
     file_path = f'data/{selected_file}'
     data = pd.read_csv(file_path)
 
-    # Convert the 'Date' column to datetime format
     data['Date'] = pd.to_datetime(data['Date'])
 
-    # Sort the data by date in case it's not sorted
     data.sort_values('Date', inplace=True)
 
-    # Plot the data into a line graph
     plt.figure(figsize=(10, 5))  # Optional: Adjust the figure size for better readability
     plt.plot(data['Date'], data['Amount'])
     plt.xlabel('Date')
     plt.ylabel('Amount')
     plt.title(f'Financial Data for {selected_file}')
 
-    # Optional: Format the date on the x-axis for better readability
     plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
     plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.AutoDateLocator())
     plt.gcf().autofmt_xdate()  # Rotate date labels for better readability
@@ -118,7 +102,6 @@ def refresh_accounts():
 
 
 def select_file():
-    # Function to open a file dialog to select a file
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if file_path:
         info = read_csv_file(file_path)
@@ -144,7 +127,6 @@ def update_current_label(*args):
         current_value_label.config(text=f"Value: {account_value}", background='white', foreground='black')
 
         account_change = data['Amount'].iloc[-1] - data['Amount'].iloc[-2]
-        # bool is positive or negative for coloring red or green if 0 or undefined it will be black
         change_color = 'black'
         if account_change > 0:
             change_color = 'green'
@@ -170,17 +152,14 @@ def update_current_label(*args):
         current_change_label.config(text=f"Error: {str(e)}", background='red', foreground='black')
 
 
-# Main function to run the Tkinter application
 if __name__ == '__main__':
     root = TkinterDnD.Tk()
     root.title('CSV File Processor')
     root.geometry('600x250')
 
-    # Create a main frame to hold everything
     main_frame = ttk.Frame(root, padding=(10, 10))
     main_frame.grid(row=0, column=0, sticky=tk.NSEW)
 
-    # Configure the grid layout
     root.grid_rowconfigure(0, weight=1)
     root.grid_columnconfigure(0, weight=1)
     main_frame.grid_rowconfigure(0, weight=1)
@@ -188,12 +167,10 @@ if __name__ == '__main__':
     main_frame.grid_columnconfigure(0, weight=1)
     main_frame.grid_columnconfigure(1, weight=1)
 
-    # Add label to instruct user inside the main frame (right side)
     label = ttk.Label(main_frame, text="Drag and drop a CSV file here", anchor="center", padding=(10, 10),
                       background="lightgrey")
     label.grid(row=0, column=2, rowspan=3, sticky=tk.NSEW)
 
-    # Add button to within the label to select a file
     select_button = ttk.Button(label, text="Select File", command=select_file)
     select_button.pack(pady=5, padx=60)
 
@@ -217,14 +194,11 @@ if __name__ == '__main__':
     plot_button = ttk.Button(main_frame, text="Show Plot", command=lambda: show_plot(dropdown.get()))
     plot_button.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
 
-    # Add refresh button in the main frame (left side)
     refresh_button = ttk.Button(main_frame, text="Refresh", command=lambda: refresh_accounts())
     refresh_button.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
 
-    # Set up drag-and-drop functionality
     root.drop_target_register(DND_FILES)
     root.dnd_bind('<<Drop>>', on_drop)
 
-    # Run the Tkinter event loop
     refresh_accounts()
     root.mainloop()
