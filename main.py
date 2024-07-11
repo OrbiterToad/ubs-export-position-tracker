@@ -205,7 +205,7 @@ if __name__ == '__main__':
     select_button = ttk.Button(label, text="Select File", command=select_file)
     select_button.pack(pady=5, padx=60)
 
-    dropdown = ttk.Combobox(main_frame, values=get_available_accounts())
+    dropdown = ttk.Combobox(main_frame, values=get_available_accounts(), width=100)
     dropdown.grid(row=0, column=0, columnspan=2, padx=10, pady=5)
     dropdown.current(0)
     dropdown.bind("<<ComboboxSelected>>", update_current_label)
