@@ -124,7 +124,7 @@ def update_current_label(*args):
             raise IndexError("Not enough data to calculate change")
 
         account_value = data['Amount'].iloc[-1]
-        current_value_label.config(text=f"Value: {account_value}", background='white', foreground='black')
+        current_value_label.config(text=f"Value: {account_value} CHF", background='white', foreground='black')
 
         account_change = data['Amount'].iloc[-1] - data['Amount'].iloc[-2]
         change_color = 'black'
@@ -133,7 +133,7 @@ def update_current_label(*args):
         elif account_change < 0:
             change_color = 'red'
 
-        current_change_label.config(text=f"Change: {account_change}", background='white', foreground=change_color)
+        current_change_label.config(text=f"Change: {account_change} CHF", background='white', foreground=change_color)
 
     except FileNotFoundError:
         current_value_label.config(text="Error: File not found", background='red', foreground='black')
